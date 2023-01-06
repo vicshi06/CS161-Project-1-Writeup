@@ -1,4 +1,28 @@
 # Proj1 Writeup 
+---
+## Integer Overflow
+### Main Idea:
+The vulnerable program has integer overflow vulnerabilities. We know that int8_t is can be negative. When passing into the function fread(), int8_t size becomes size_t, an unsigned integer. Hence, we can cast make size to be -1 (0xffffffff), and it will be cast to 255 when checking if > 255. We can exploit this nature and write the shellcode into the msg buffer. 
+ 
+### Magic Numbers:
+We first determine the address of the msg to be 0xffffdbc8, and the address of the rip of the display function to be 0xffffdc5c. This was done by invoking GDB at a breakpoint of 19. By doing so, we figure out the rip from msg is 0xffffdc5c - 0xffffdbc8 = 148 bytes. 
+![image](https://user-images.githubusercontent.com/90171690/210927658-dd8818bf-9abc-4c27-980a-0f8c4a78a61b.png)
+![image](https://user-images.githubusercontent.com/90171690/210927675-2cb25eb3-aeab-41f8-b3e1-abb645d9428e.png)
+
+
+### Exploit Structure:
+![image](https://user-images.githubusercontent.com/90171690/210927696-4194c878-91f7-49b2-9bc0-f775852c40b1.png)
+
+- We want to pad the buffer of 148 bytes and make the rip of telemetry pointing directly at the address above. Since the address of rip is 0xffffdc5c, then 4 bytes above will be 0xffffdc60. 
+- Pad 145 dummy variables to the buffer and reach the rip. 
+- Once reach the rip, input the address 0xffffdc60 to make the rip pointer point to the address above that stores the shellcode. 
+- Insert shellcode starting from address 0xffffdc60. Once the vulnerable function returns, it will run the shellcode above.
+
+ 
+### Exploit GDB Output: 
+![image](https://user-images.githubusercontent.com/90171690/210927727-b3c570ba-6e20-4779-b514-84480343b09f.png)
+
+After the garbage, 0xffffdc60 is overwritten with the shellcode (starting from the second input of the first line). The rip at 0xffffdc5c is now pointing to the address that stores the shellcode. 
 
 ---
 ## Off-by-one
